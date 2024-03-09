@@ -401,7 +401,7 @@ function Dashboard(props) {
                           <p className="text-muted">
                             The report also shows that consumers will not easily
                             forgive a company once a breach exposing their
-                            personal data occurs.
+                            personal data occurs. 
                           </p>
                         </td>
                         <td className="td-actions text-right">
