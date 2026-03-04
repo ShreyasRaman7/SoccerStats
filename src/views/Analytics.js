@@ -2,138 +2,63 @@ import React from "react";
 import classNames from "classnames";
 import { Line, Bar } from "react-chartjs-2";
 import {
-  Card,
-  CardHeader,
-  CardBody,
-  CardTitle,
-  Row,
-  Col,
-  Button,
-  ButtonGroup,
-  Badge,
-  Progress,
+  Card, CardHeader, CardBody, CardTitle,
+  Row, Col, Button, ButtonGroup, Badge, Progress,
 } from "reactstrap";
+import { chartEngagement, chartPostsPerPlatform, chartPlatformViews, chartClipsOverTime } from "variables/charts.js";
 
-import {
-  chartEngagement,
-  chartPostsPerPlatform,
-  chartPlatformViews,
-  chartClipsOverTime,
-} from "variables/charts.js";
+const PLATFORM_COLOR = { tiktok: "danger", instagram: "warning", youtube: "info" };
 
-const topClips = [
-  { title: "Nobody does it like Leo. NOBODY.", platform: "TikTok", views: "310K", likes: "42K", shares: "18K", score: 98 },
-  { title: "Insane volley from 35 yards", platform: "TikTok", views: "142K", likes: "19K", shares: "8K", score: 96 },
-  { title: "He just walked past 4 defenders", platform: "YouTube", views: "98K", likes: "12K", shares: "5K", score: 93 },
-  { title: "That reflex save should be illegal", platform: "Instagram", views: "87K", likes: "14K", shares: "6K", score: 94 },
-  { title: "CR7 elastico that broke the internet", platform: "TikTok", views: "76K", likes: "11K", shares: "4K", score: 91 },
-];
-
-const platformColor = {
-  TikTok: "danger",
-  Instagram: "warning",
-  YouTube: "info",
-};
+function fmtNum(n) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `${(n / 1_000).toFixed(0)}K`;
+  return String(n);
+}
 
 function Analytics() {
-  const [period, setPeriod] = React.useState("week");
+  const [analytics, setAnalytics] = React.useState(null);
+  const [period,    setPeriod]    = React.useState("week");
+
+  React.useEffect(() => {
+    const load = () => fetch("/api/analytics").then((r) => r.json()).then(setAnalytics).catch(() => {});
+    load();
+    const t = setInterval(load, 15000);
+    return () => clearInterval(t);
+  }, []);
+
+  const totalViews  = analytics?.total_views    ?? 0;
+  const totalLikes  = analytics?.total_likes    ?? 0;
+  const totalShares = analytics?.total_shares   ?? 0;
+  const topClips    = analytics?.top_clips      ?? [];
+  const byPlatform  = analytics?.by_platform    ?? {};
+
+  // Compute platform share percentages
+  const totalByPlatform = Object.values(byPlatform).reduce((a, d) => a + d.views, 0);
+  const platformEntries = Object.entries(byPlatform).sort((a, b) => b[1].views - a[1].views);
 
   return (
     <>
       <div className="content">
-        {/* KPI row */}
         <Row>
-          <Col lg="3" md="6">
-            <Card className="card-stats">
-              <CardBody>
-                <Row>
-                  <Col xs="5">
-                    <div className="info-icon text-center icon-info">
-                      <i className="tim-icons icon-world" />
-                    </div>
-                  </Col>
-                  <Col xs="7">
-                    <div className="numbers">
-                      <p className="card-category">Total Views</p>
-                      <CardTitle tag="h3">4.2M</CardTitle>
-                    </div>
-                  </Col>
-                </Row>
-                <p className="card-category mt-2 mb-0" style={{ fontSize: "0.78rem" }}>
-                  <span className="text-success">+24%</span> vs last month
-                </p>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col lg="3" md="6">
-            <Card className="card-stats">
-              <CardBody>
-                <Row>
-                  <Col xs="5">
-                    <div className="info-icon text-center icon-warning">
-                      <i className="tim-icons icon-heart-2" />
-                    </div>
-                  </Col>
-                  <Col xs="7">
-                    <div className="numbers">
-                      <p className="card-category">Total Likes</p>
-                      <CardTitle tag="h3">318K</CardTitle>
-                    </div>
-                  </Col>
-                </Row>
-                <p className="card-category mt-2 mb-0" style={{ fontSize: "0.78rem" }}>
-                  <span className="text-success">+18%</span> vs last month
-                </p>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col lg="3" md="6">
-            <Card className="card-stats">
-              <CardBody>
-                <Row>
-                  <Col xs="5">
-                    <div className="info-icon text-center icon-success">
-                      <i className="tim-icons icon-refresh-02" />
-                    </div>
-                  </Col>
-                  <Col xs="7">
-                    <div className="numbers">
-                      <p className="card-category">Shares</p>
-                      <CardTitle tag="h3">142K</CardTitle>
-                    </div>
-                  </Col>
-                </Row>
-                <p className="card-category mt-2 mb-0" style={{ fontSize: "0.78rem" }}>
-                  <span className="text-success">+31%</span> vs last month
-                </p>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col lg="3" md="6">
-            <Card className="card-stats">
-              <CardBody>
-                <Row>
-                  <Col xs="5">
-                    <div className="info-icon text-center icon-danger">
-                      <i className="tim-icons icon-single-02" />
-                    </div>
-                  </Col>
-                  <Col xs="7">
-                    <div className="numbers">
-                      <p className="card-category">New Followers</p>
-                      <CardTitle tag="h3">28K</CardTitle>
-                    </div>
-                  </Col>
-                </Row>
-                <p className="card-category mt-2 mb-0" style={{ fontSize: "0.78rem" }}>
-                  <span className="text-success">+9%</span> vs last month
-                </p>
-              </CardBody>
-            </Card>
-          </Col>
+          {[
+            { label: "Total Views",   value: fmtNum(totalViews),  icon: "icon-world",      cls: "icon-info" },
+            { label: "Total Likes",   value: fmtNum(totalLikes),  icon: "icon-heart-2",    cls: "icon-warning" },
+            { label: "Shares",        value: fmtNum(totalShares), icon: "icon-refresh-02", cls: "icon-success" },
+            { label: "New Followers", value: "—",                 icon: "icon-single-02",  cls: "icon-danger" },
+          ].map((s) => (
+            <Col lg="3" md="6" key={s.label}>
+              <Card className="card-stats">
+                <CardBody>
+                  <Row>
+                    <Col xs="5"><div className={`info-icon text-center ${s.cls}`}><i className={`tim-icons ${s.icon}`} /></div></Col>
+                    <Col xs="7"><div className="numbers"><p className="card-category">{s.label}</p><CardTitle tag="h3">{s.value}</CardTitle></div></Col>
+                  </Row>
+                </CardBody>
+              </Card>
+            </Col>
+          ))}
         </Row>
 
-        {/* Main views chart */}
         <Row>
           <Col xs="12">
             <Card className="card-chart">
@@ -145,65 +70,37 @@ function Analytics() {
                   </Col>
                   <Col sm="6" className="text-right">
                     <ButtonGroup className="btn-group-toggle" data-toggle="buttons">
-                      <Button
-                        tag="label"
-                        size="sm"
-                        color="info"
-                        className={classNames("btn-simple", { active: period === "week" })}
-                        onClick={() => setPeriod("week")}
-                      >
-                        7D
-                      </Button>
-                      <Button
-                        tag="label"
-                        size="sm"
-                        color="info"
-                        className={classNames("btn-simple", { active: period === "month" })}
-                        onClick={() => setPeriod("month")}
-                      >
-                        30D
-                      </Button>
-                      <Button
-                        tag="label"
-                        size="sm"
-                        color="info"
-                        className={classNames("btn-simple", { active: period === "year" })}
-                        onClick={() => setPeriod("year")}
-                      >
-                        1Y
-                      </Button>
+                      {["week", "month", "year"].map((p) => (
+                        <Button key={p} tag="label" size="sm" color="info"
+                          className={classNames("btn-simple", { active: period === p })}
+                          onClick={() => setPeriod(p)}
+                          style={{ textTransform: "capitalize" }}>
+                          {p === "week" ? "7D" : p === "month" ? "30D" : "1Y"}
+                        </Button>
+                      ))}
                     </ButtonGroup>
                   </Col>
                 </Row>
               </CardHeader>
               <CardBody>
                 <div className="chart-area">
-                  <Line
-                    data={chartClipsOverTime["views"]}
-                    options={chartClipsOverTime.options}
-                  />
+                  <Line data={chartClipsOverTime["views"]} options={chartClipsOverTime.options} />
                 </div>
               </CardBody>
             </Card>
           </Col>
         </Row>
 
-        {/* Platform breakdown + engagement */}
         <Row>
           <Col lg="6">
             <Card className="card-chart">
               <CardHeader>
                 <h5 className="card-category">By Platform</h5>
-                <CardTitle tag="h3">
-                  <i className="tim-icons icon-send text-primary" /> Posts per Platform
-                </CardTitle>
+                <CardTitle tag="h3"><i className="tim-icons icon-send text-primary" /> Posts per Platform</CardTitle>
               </CardHeader>
               <CardBody>
                 <div className="chart-area">
-                  <Bar
-                    data={chartPostsPerPlatform.data}
-                    options={chartPostsPerPlatform.options}
-                  />
+                  <Bar data={chartPostsPerPlatform.data} options={chartPostsPerPlatform.options} />
                 </div>
               </CardBody>
             </Card>
@@ -212,114 +109,109 @@ function Analytics() {
             <Card className="card-chart">
               <CardHeader>
                 <h5 className="card-category">Engagement Rate</h5>
-                <CardTitle tag="h3">
-                  <i className="tim-icons icon-heart-2 text-warning" /> Weekly Trend
-                </CardTitle>
+                <CardTitle tag="h3"><i className="tim-icons icon-heart-2 text-warning" /> Weekly Trend</CardTitle>
               </CardHeader>
               <CardBody>
                 <div className="chart-area">
-                  <Line
-                    data={chartEngagement.data}
-                    options={chartEngagement.options}
-                  />
+                  <Line data={chartEngagement.data} options={chartEngagement.options} />
                 </div>
               </CardBody>
             </Card>
           </Col>
         </Row>
 
-        {/* Platform share breakdown */}
         <Row>
           <Col lg="4">
             <Card>
-              <CardHeader>
-                <CardTitle tag="h4">Platform Share</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle tag="h4">Platform Share</CardTitle></CardHeader>
               <CardBody>
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between mb-1">
-                    <span style={{ color: "#fff" }}>
-                      <Badge color="danger" pill className="mr-2">TK</Badge>TikTok
-                    </span>
-                    <span style={{ color: "#fff", fontWeight: 700 }}>50%</span>
-                  </div>
-                  <Progress value={50} color="danger" style={{ height: 8 }} />
-                </div>
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between mb-1">
-                    <span style={{ color: "#fff" }}>
-                      <Badge color="warning" pill className="mr-2">IG</Badge>Instagram
-                    </span>
-                    <span style={{ color: "#fff", fontWeight: 700 }}>31%</span>
-                  </div>
-                  <Progress value={31} color="warning" style={{ height: 8 }} />
-                </div>
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between mb-1">
-                    <span style={{ color: "#fff" }}>
-                      <Badge color="info" pill className="mr-2">YT</Badge>YouTube
-                    </span>
-                    <span style={{ color: "#fff", fontWeight: 700 }}>19%</span>
-                  </div>
-                  <Progress value={19} color="info" style={{ height: 8 }} />
-                </div>
-
-                <hr style={{ borderColor: "rgba(255,255,255,0.1)" }} />
-
-                <div className="text-center mt-3">
-                  <p style={{ color: "#9a9a9a", fontSize: "0.8rem", marginBottom: 4 }}>Best Performing Platform</p>
-                  <Badge color="danger" style={{ fontSize: "0.95rem", padding: "6px 14px" }}>TikTok</Badge>
-                </div>
+                {platformEntries.length > 0 ? (
+                  platformEntries.map(([pl, data]) => {
+                    const pct = totalByPlatform > 0 ? Math.round((data.views / totalByPlatform) * 100) : 0;
+                    return (
+                      <div className="mb-3" key={pl}>
+                        <div className="d-flex justify-content-between mb-1">
+                          <span style={{ color: "#fff" }}>
+                            <Badge color={PLATFORM_COLOR[pl.toLowerCase()] || "secondary"} pill className="mr-2">
+                              {pl.slice(0, 2).toUpperCase()}
+                            </Badge>
+                            {pl.charAt(0).toUpperCase() + pl.slice(1)}
+                          </span>
+                          <span style={{ color: "#fff", fontWeight: 700 }}>{pct}%</span>
+                        </div>
+                        <Progress value={pct} color={PLATFORM_COLOR[pl.toLowerCase()] || "info"} style={{ height: 8 }} />
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p style={{ color: "#9a9a9a", textAlign: "center", padding: "1rem 0" }}>No platform data yet.</p>
+                )}
+                {platformEntries.length > 0 && (
+                  <>
+                    <hr style={{ borderColor: "rgba(255,255,255,0.1)" }} />
+                    <div className="text-center mt-2">
+                      <p style={{ color: "#9a9a9a", fontSize: "0.8rem", marginBottom: 4 }}>Best Performing</p>
+                      <Badge color={PLATFORM_COLOR[platformEntries[0]?.[0]?.toLowerCase()] || "info"} style={{ fontSize: "0.95rem", padding: "6px 14px" }}>
+                        {platformEntries[0]?.[0]?.charAt(0).toUpperCase() + platformEntries[0]?.[0]?.slice(1)}
+                      </Badge>
+                    </div>
+                  </>
+                )}
               </CardBody>
             </Card>
           </Col>
 
-          {/* Top performing clips */}
           <Col lg="8">
             <Card>
               <CardHeader>
                 <CardTitle tag="h4">Top Performing Clips</CardTitle>
-                <p className="card-category">All time, sorted by views</p>
+                <p className="card-category">Sorted by total views</p>
               </CardHeader>
               <CardBody>
-                <div className="table-responsive">
-                  <table className="table tablesorter">
-                    <thead className="text-primary">
-                      <tr>
-                        <th>#</th>
-                        <th>Clip</th>
-                        <th>Platform</th>
-                        <th className="text-center">Views</th>
-                        <th className="text-center">Likes</th>
-                        <th className="text-center">Shares</th>
-                        <th className="text-center">Score</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topClips.map((clip, i) => (
-                        <tr key={i}>
-                          <td style={{ color: "#9a9a9a" }}>{i + 1}</td>
-                          <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {clip.title}
-                          </td>
-                          <td>
-                            <Badge color={platformColor[clip.platform]} pill>
-                              {clip.platform}
-                            </Badge>
-                          </td>
-                          <td className="text-center" style={{ fontWeight: 700 }}>{clip.views}</td>
-                          <td className="text-center" style={{ color: "#9a9a9a" }}>{clip.likes}</td>
-                          <td className="text-center" style={{ color: "#9a9a9a" }}>{clip.shares}</td>
-                          <td className="text-center">
-                            <span style={{ color: clip.score >= 95 ? "#00d6b4" : "#1f8ef1", fontWeight: 700 }}>
-                              {clip.score}%
-                            </span>
-                          </td>
+                {topClips.length === 0 ? (
+                  <p style={{ color: "#9a9a9a", textAlign: "center", padding: "2rem 0" }}>
+                    No posted clips yet. Approve and post clips to see analytics here.
+                  </p>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table tablesorter">
+                      <thead className="text-primary">
+                        <tr>
+                          <th>#</th>
+                          <th>Clip</th>
+                          <th>Platform</th>
+                          <th className="text-center">Views</th>
+                          <th className="text-center">Likes</th>
+                          <th className="text-center">Shares</th>
+                          <th className="text-center">Score</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {topClips.map((clip, i) => (
+                          <tr key={clip.id}>
+                            <td style={{ color: "#9a9a9a" }}>{i + 1}</td>
+                            <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {clip.title}
+                            </td>
+                            <td>
+                              <Badge color={PLATFORM_COLOR[clip.platform?.toLowerCase()] || "secondary"} pill>
+                                {clip.platform}
+                              </Badge>
+                            </td>
+                            <td className="text-center" style={{ fontWeight: 700 }}>{fmtNum(clip.views)}</td>
+                            <td className="text-center" style={{ color: "#9a9a9a" }}>{fmtNum(clip.likes)}</td>
+                            <td className="text-center" style={{ color: "#9a9a9a" }}>{fmtNum(clip.shares)}</td>
+                            <td className="text-center">
+                              <span style={{ color: clip.viral_score >= 90 ? "#00d6b4" : "#1f8ef1", fontWeight: 700 }}>
+                                {clip.viral_score?.toFixed(0)}%
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </CardBody>
             </Card>
           </Col>

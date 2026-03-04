@@ -1,233 +1,105 @@
 import React from "react";
 import {
-  Card,
-  CardHeader,
-  CardBody,
-  CardTitle,
-  Row,
-  Col,
-  Badge,
-  Button,
-  Progress,
-  Input,
-  InputGroup,
-  InputGroupAddon,
+  Card, CardHeader, CardBody, CardTitle,
+  Row, Col, Badge, Button, Progress,
+  Input, InputGroup, InputGroupAddon,
 } from "reactstrap";
 
-const allClips = [
-  {
-    id: "CLIP-001",
-    job: "JOB-001",
-    source: "Top 10 Goals of the Season",
-    start: "0:32",
-    end: "0:58",
-    duration: "26s",
-    viralScore: 96,
-    caption: "Insane volley from 35 yards 🔥 #football #goals",
-    faceTracked: true,
-    status: "posted",
-    platforms: ["TikTok", "Instagram"],
-    views: "142K",
-  },
-  {
-    id: "CLIP-002",
-    job: "JOB-001",
-    source: "Top 10 Goals of the Season",
-    start: "2:14",
-    end: "2:45",
-    duration: "31s",
-    viralScore: 93,
-    caption: "He just walked past 4 defenders like they weren't there 😤",
-    faceTracked: true,
-    status: "posted",
-    platforms: ["TikTok", "YouTube"],
-    views: "98K",
-  },
-  {
-    id: "CLIP-003",
-    job: "JOB-002",
-    source: "Ronaldo Skills Compilation",
-    start: "1:05",
-    end: "1:32",
-    duration: "27s",
-    viralScore: 91,
-    caption: "CR7 elastico that broke the internet 💫 #Ronaldo",
-    faceTracked: true,
-    status: "captioning",
-    platforms: [],
-    views: "—",
-  },
-  {
-    id: "CLIP-004",
-    job: "JOB-002",
-    source: "Ronaldo Skills Compilation",
-    start: "3:42",
-    end: "4:09",
-    duration: "27s",
-    viralScore: 87,
-    caption: "The step-over king never misses 👑",
-    faceTracked: false,
-    status: "processing",
-    platforms: [],
-    views: "—",
-  },
-  {
-    id: "CLIP-005",
-    job: "JOB-003",
-    source: "Best Saves 2024",
-    start: "0:18",
-    end: "0:44",
-    duration: "26s",
-    viralScore: 94,
-    caption: "That reflex save should be illegal 🧤 #goalkeeper",
-    faceTracked: true,
-    status: "scheduled",
-    platforms: ["TikTok"],
-    views: "—",
-  },
-  {
-    id: "CLIP-006",
-    job: "JOB-004",
-    source: "Messi Dribbles Masterclass",
-    start: "0:55",
-    end: "1:25",
-    duration: "30s",
-    viralScore: 98,
-    caption: "Nobody does it like Leo. NOBODY. 🐐 #Messi",
-    faceTracked: true,
-    status: "posted",
-    platforms: ["TikTok", "Instagram", "YouTube"],
-    views: "310K",
-  },
-];
-
-const statusColor = {
-  posted: "success",
-  scheduled: "primary",
-  captioning: "warning",
-  processing: "info",
-};
-
-const platformColor = {
-  TikTok: "danger",
-  Instagram: "warning",
-  YouTube: "info",
-};
+const STATUS_COLOR   = { posted: "success", scheduled: "primary", pending: "secondary", approved: "info", rejected: "danger" };
+const PLATFORM_COLOR = { tiktok: "danger", instagram: "warning", youtube: "info" };
 
 function ClipQueue() {
+  const [clips,  setClips]  = React.useState([]);
   const [filter, setFilter] = React.useState("all");
   const [search, setSearch] = React.useState("");
 
-  const filtered = allClips.filter((c) => {
+  const loadClips = React.useCallback(() => {
+    fetch("/api/clips").then((r) => r.json()).then(setClips).catch(() => {});
+  }, []);
+
+  React.useEffect(() => {
+    loadClips();
+    const t = setInterval(loadClips, 5000);
+    return () => clearInterval(t);
+  }, [loadClips]);
+
+  const handleApprove = (clipId) => {
+    fetch(`/api/clips/${clipId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ status: "approved" }),
+    }).then(loadClips);
+  };
+
+  const handleReject = (clipId) => {
+    fetch(`/api/clips/${clipId}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ status: "rejected" }),
+    }).then(loadClips);
+  };
+
+  const handleSchedule = (clipId, platform) => {
+    fetch("/api/schedule", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ clip_id: clipId, platform }),
+    }).then(loadClips);
+  };
+
+  const filtered = clips.filter((c) => {
     const matchStatus = filter === "all" || c.status === filter;
-    const matchSearch =
-      !search ||
-      c.source.toLowerCase().includes(search.toLowerCase()) ||
-      c.caption.toLowerCase().includes(search.toLowerCase()) ||
-      c.id.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search
+      || c.job_title?.toLowerCase().includes(search.toLowerCase())
+      || c.caption?.toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
+
+  const counts = {
+    posted:    clips.filter((c) => c.status === "posted").length,
+    scheduled: clips.filter((c) => c.status === "scheduled").length,
+    pending:   clips.filter((c) => c.status === "pending").length,
+  };
+  const avgScore = clips.length
+    ? Math.round(clips.reduce((a, c) => a + c.viral_score, 0) / clips.length)
+    : 0;
 
   return (
     <>
       <div className="content">
-        {/* Summary cards */}
         <Row>
-          <Col lg="3" md="6">
-            <Card className="card-stats">
-              <CardBody>
-                <Row>
-                  <Col xs="5">
-                    <div className="info-icon text-center icon-success">
-                      <i className="tim-icons icon-check-2" />
-                    </div>
-                  </Col>
-                  <Col xs="7">
-                    <div className="numbers">
-                      <p className="card-category">Posted</p>
-                      <CardTitle tag="h3">
-                        {allClips.filter((c) => c.status === "posted").length}
-                      </CardTitle>
-                    </div>
-                  </Col>
-                </Row>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col lg="3" md="6">
-            <Card className="card-stats">
-              <CardBody>
-                <Row>
-                  <Col xs="5">
-                    <div className="info-icon text-center icon-primary">
-                      <i className="tim-icons icon-time-alarm" />
-                    </div>
-                  </Col>
-                  <Col xs="7">
-                    <div className="numbers">
-                      <p className="card-category">Scheduled</p>
-                      <CardTitle tag="h3">
-                        {allClips.filter((c) => c.status === "scheduled").length}
-                      </CardTitle>
-                    </div>
-                  </Col>
-                </Row>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col lg="3" md="6">
-            <Card className="card-stats">
-              <CardBody>
-                <Row>
-                  <Col xs="5">
-                    <div className="info-icon text-center icon-warning">
-                      <i className="tim-icons icon-refresh-02" />
-                    </div>
-                  </Col>
-                  <Col xs="7">
-                    <div className="numbers">
-                      <p className="card-category">Processing</p>
-                      <CardTitle tag="h3">
-                        {allClips.filter((c) => c.status === "processing" || c.status === "captioning").length}
-                      </CardTitle>
-                    </div>
-                  </Col>
-                </Row>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col lg="3" md="6">
-            <Card className="card-stats">
-              <CardBody>
-                <Row>
-                  <Col xs="5">
-                    <div className="info-icon text-center icon-info">
-                      <i className="tim-icons icon-trophy" />
-                    </div>
-                  </Col>
-                  <Col xs="7">
-                    <div className="numbers">
-                      <p className="card-category">Avg Viral Score</p>
-                      <CardTitle tag="h3">
-                        {Math.round(allClips.reduce((a, c) => a + c.viralScore, 0) / allClips.length)}%
-                      </CardTitle>
-                    </div>
-                  </Col>
-                </Row>
-              </CardBody>
-            </Card>
-          </Col>
+          {[
+            { label: "Posted",    value: counts.posted,    icon: "icon-check-2",   cls: "icon-success" },
+            { label: "Scheduled", value: counts.scheduled, icon: "icon-time-alarm", cls: "icon-primary" },
+            { label: "Pending",   value: counts.pending,   icon: "icon-refresh-02", cls: "icon-warning" },
+            { label: "Avg Score", value: `${avgScore}%`,   icon: "icon-trophy",    cls: "icon-info" },
+          ].map((s) => (
+            <Col lg="3" md="6" key={s.label}>
+              <Card className="card-stats">
+                <CardBody>
+                  <Row>
+                    <Col xs="5">
+                      <div className={`info-icon text-center ${s.cls}`}><i className={`tim-icons ${s.icon}`} /></div>
+                    </Col>
+                    <Col xs="7">
+                      <div className="numbers">
+                        <p className="card-category">{s.label}</p>
+                        <CardTitle tag="h3">{s.value}</CardTitle>
+                      </div>
+                    </Col>
+                  </Row>
+                </CardBody>
+              </Card>
+            </Col>
+          ))}
         </Row>
 
-        {/* Filters + table */}
         <Row>
           <Col xs="12">
             <Card>
               <CardHeader>
                 <Row className="align-items-center">
-                  <Col md="5">
-                    <CardTitle tag="h4">Clip Queue</CardTitle>
-                  </Col>
+                  <Col md="4"><CardTitle tag="h4">Clip Queue</CardTitle></Col>
                   <Col md="4">
                     <InputGroup>
                       <Input
@@ -237,110 +109,102 @@ function ClipQueue() {
                         style={{ background: "#1d1f33", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }}
                       />
                       <InputGroupAddon addonType="append">
-                        <Button color="secondary" size="sm">
-                          <i className="tim-icons icon-zoom-split" />
-                        </Button>
+                        <Button color="secondary" size="sm"><i className="tim-icons icon-zoom-split" /></Button>
                       </InputGroupAddon>
                     </InputGroup>
                   </Col>
-                  <Col md="3" className="text-right">
-                    <Button
-                      size="sm"
-                      color={filter === "all" ? "info" : "secondary"}
-                      onClick={() => setFilter("all")}
-                      className="mr-1"
-                    >All</Button>
-                    <Button
-                      size="sm"
-                      color={filter === "posted" ? "success" : "secondary"}
-                      onClick={() => setFilter("posted")}
-                      className="mr-1"
-                    >Posted</Button>
-                    <Button
-                      size="sm"
-                      color={filter === "scheduled" ? "primary" : "secondary"}
-                      onClick={() => setFilter("scheduled")}
-                    >Scheduled</Button>
+                  <Col md="4" className="text-right">
+                    {["all", "pending", "posted", "scheduled"].map((f) => (
+                      <Button key={f} size="sm" className="mr-1"
+                        color={filter === f ? "info" : "secondary"}
+                        onClick={() => setFilter(f)}
+                        style={{ textTransform: "capitalize" }}>
+                        {f}
+                      </Button>
+                    ))}
                   </Col>
                 </Row>
               </CardHeader>
               <CardBody>
-                <div className="table-responsive">
-                  <table className="table tablesorter">
-                    <thead className="text-primary">
-                      <tr>
-                        <th>Clip ID</th>
-                        <th>Source Video</th>
-                        <th>Clip Time</th>
-                        <th>Caption Preview</th>
-                        <th>Face Track</th>
-                        <th>Status</th>
-                        <th>Platforms</th>
-                        <th className="text-center">Viral Score</th>
-                        <th className="text-center">Views</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((clip) => (
-                        <tr key={clip.id}>
-                          <td style={{ fontFamily: "monospace", color: "#9a9a9a", fontSize: "0.8rem" }}>
-                            {clip.id}
-                          </td>
-                          <td style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {clip.source}
-                          </td>
-                          <td style={{ color: "#9a9a9a", fontSize: "0.85rem" }}>
-                            {clip.start} – {clip.end}
-                            <br />
-                            <small style={{ color: "#666" }}>{clip.duration}</small>
-                          </td>
-                          <td style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.82rem" }}>
-                            {clip.caption}
-                          </td>
-                          <td className="text-center">
-                            {clip.faceTracked ? (
-                              <i className="tim-icons icon-check-2 text-success" />
-                            ) : (
-                              <i className="tim-icons icon-simple-remove text-muted" />
-                            )}
-                          </td>
-                          <td>
-                            <Badge color={statusColor[clip.status]} pill>
-                              {clip.status.charAt(0).toUpperCase() + clip.status.slice(1)}
-                            </Badge>
-                          </td>
-                          <td>
-                            {clip.platforms.length > 0 ? (
-                              clip.platforms.map((p) => (
-                                <Badge key={p} color={platformColor[p]} pill className="mr-1" style={{ fontSize: "0.7rem" }}>
-                                  {p}
-                                </Badge>
-                              ))
-                            ) : (
-                              <span style={{ color: "#666", fontSize: "0.8rem" }}>—</span>
-                            )}
-                          </td>
-                          <td className="text-center">
-                            <span
-                              style={{
-                                color: clip.viralScore >= 93 ? "#00d6b4" : clip.viralScore >= 85 ? "#1f8ef1" : "#ff8d72",
-                                fontWeight: 700,
-                              }}
-                            >
-                              {clip.viralScore}%
-                            </span>
-                          </td>
-                          <td className="text-center" style={{ fontWeight: 600 }}>
-                            {clip.views}
-                          </td>
+                {filtered.length === 0 ? (
+                  <p style={{ color: "#9a9a9a", textAlign: "center", padding: "2rem 0" }}>
+                    {clips.length === 0
+                      ? "No clips yet — submit a YouTube link on the Dashboard."
+                      : "No clips match your filter."}
+                  </p>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table tablesorter">
+                      <thead className="text-primary">
+                        <tr>
+                          <th>ID</th>
+                          <th>Source</th>
+                          <th>Clip Time</th>
+                          <th>Caption</th>
+                          <th>Face Track</th>
+                          <th>Status</th>
+                          <th>Platforms</th>
+                          <th className="text-center">Score</th>
+                          <th className="text-right">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {filtered.length === 0 && (
-                  <div className="text-center py-4" style={{ color: "#9a9a9a" }}>
-                    No clips match your filter.
+                      </thead>
+                      <tbody>
+                        {filtered.map((clip) => (
+                          <tr key={clip.id}>
+                            <td style={{ fontFamily: "monospace", color: "#9a9a9a", fontSize: "0.8rem" }}>#{clip.id}</td>
+                            <td style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {clip.job_title || `Job #${clip.job_id}`}
+                            </td>
+                            <td style={{ color: "#9a9a9a", fontSize: "0.85rem" }}>
+                              {fmtTime(clip.start_time)} – {fmtTime(clip.end_time)}
+                              <br /><small style={{ color: "#666" }}>{clip.duration?.toFixed(0)}s</small>
+                            </td>
+                            <td style={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.82rem" }}>
+                              {clip.caption || "—"}
+                            </td>
+                            <td className="text-center">
+                              {clip.face_tracked
+                                ? <i className="tim-icons icon-check-2 text-success" />
+                                : <i className="tim-icons icon-simple-remove text-muted" />}
+                            </td>
+                            <td>
+                              <Badge color={STATUS_COLOR[clip.status] || "secondary"} pill>
+                                {clip.status?.charAt(0).toUpperCase() + clip.status?.slice(1)}
+                              </Badge>
+                            </td>
+                            <td>
+                              {clip.platforms?.length > 0
+                                ? clip.platforms.map((p) => (
+                                    <Badge key={p} color={PLATFORM_COLOR[p.toLowerCase()] || "secondary"} pill className="mr-1" style={{ fontSize: "0.7rem" }}>
+                                      {p}
+                                    </Badge>
+                                  ))
+                                : <span style={{ color: "#666", fontSize: "0.8rem" }}>—</span>}
+                            </td>
+                            <td className="text-center">
+                              <span style={{ color: clip.viral_score >= 90 ? "#00d6b4" : clip.viral_score >= 75 ? "#1f8ef1" : "#ff8d72", fontWeight: 700 }}>
+                                {clip.viral_score?.toFixed(0)}%
+                              </span>
+                            </td>
+                            <td className="text-right">
+                              {clip.status === "pending" && (
+                                <>
+                                  <Button color="success" size="sm" className="mr-1" onClick={() => handleSchedule(clip.id, "tiktok")}>TK</Button>
+                                  <Button color="warning" size="sm" className="mr-1" onClick={() => handleSchedule(clip.id, "instagram")}>IG</Button>
+                                  <Button color="info"    size="sm" className="mr-1" onClick={() => handleSchedule(clip.id, "youtube")}>YT</Button>
+                                  <Button color="danger"  size="sm" onClick={() => handleReject(clip.id)}>✕</Button>
+                                </>
+                              )}
+                              {clip.file_path && (
+                                <a href={clip.file_path} target="_blank" rel="noopener noreferrer">
+                                  <Button color="link" size="sm"><i className="tim-icons icon-triangle-right-17" /></Button>
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </CardBody>
@@ -348,48 +212,31 @@ function ClipQueue() {
           </Col>
         </Row>
 
-        {/* Processing pipeline */}
+        {/* Pipeline stages */}
         <Row>
           <Col xs="12">
             <Card>
               <CardHeader>
-                <CardTitle tag="h4">Active Pipeline</CardTitle>
-                <p className="card-category">Real-time clip processing stages</p>
+                <CardTitle tag="h4">Processing Pipeline</CardTitle>
+                <p className="card-category">How every clip is made</p>
               </CardHeader>
               <CardBody>
                 <Row>
-                  <Col md="3">
-                    <div className="text-center p-3" style={{ border: "1px solid rgba(29,140,248,0.3)", borderRadius: 8 }}>
-                      <i className="tim-icons icon-cloud-download-93 text-info" style={{ fontSize: "2rem" }} />
-                      <p className="mt-2 mb-1" style={{ color: "#fff", fontWeight: 600 }}>1. Download</p>
-                      <p style={{ color: "#9a9a9a", fontSize: "0.8rem" }}>Fetch YouTube video via yt-dlp</p>
-                      <Progress value={100} color="info" style={{ height: 4 }} />
-                    </div>
-                  </Col>
-                  <Col md="3">
-                    <div className="text-center p-3" style={{ border: "1px solid rgba(255,141,114,0.3)", borderRadius: 8 }}>
-                      <i className="tim-icons icon-bulb-63 text-warning" style={{ fontSize: "2rem" }} />
-                      <p className="mt-2 mb-1" style={{ color: "#fff", fontWeight: 600 }}>2. AI Analysis</p>
-                      <p style={{ color: "#9a9a9a", fontSize: "0.8rem" }}>Detect viral moments & score clips</p>
-                      <Progress value={65} color="warning" style={{ height: 4 }} />
-                    </div>
-                  </Col>
-                  <Col md="3">
-                    <div className="text-center p-3" style={{ border: "1px solid rgba(0,214,180,0.3)", borderRadius: 8 }}>
-                      <i className="tim-icons icon-single-02 text-success" style={{ fontSize: "2rem" }} />
-                      <p className="mt-2 mb-1" style={{ color: "#fff", fontWeight: 600 }}>3. Face Track & Crop</p>
-                      <p style={{ color: "#9a9a9a", fontSize: "0.8rem" }}>Auto-crop to 9:16 with face tracking</p>
-                      <Progress value={40} color="success" style={{ height: 4 }} />
-                    </div>
-                  </Col>
-                  <Col md="3">
-                    <div className="text-center p-3" style={{ border: "1px solid rgba(100,100,255,0.3)", borderRadius: 8 }}>
-                      <i className="tim-icons icon-send text-primary" style={{ fontSize: "2rem" }} />
-                      <p className="mt-2 mb-1" style={{ color: "#fff", fontWeight: 600 }}>4. Caption & Post</p>
-                      <p style={{ color: "#9a9a9a", fontSize: "0.8rem" }}>Add captions & schedule to platforms</p>
-                      <Progress value={20} color="primary" style={{ height: 4 }} />
-                    </div>
-                  </Col>
+                  {[
+                    { step: "1. Download", icon: "icon-cloud-download-93", color: "text-info",    desc: "yt-dlp fetches the video",             val: 100 },
+                    { step: "2. AI Score", icon: "icon-bulb-63",           color: "text-warning", desc: "Whisper transcribes + scores moments",  val: 65 },
+                    { step: "3. Crop 9:16", icon: "icon-single-02",        color: "text-success", desc: "Face-tracked crop to vertical format",  val: 40 },
+                    { step: "4. Post",      icon: "icon-send",             color: "text-primary", desc: "Auto-scheduled to all platforms",       val: 20 },
+                  ].map((p) => (
+                    <Col md="3" key={p.step}>
+                      <div className="text-center p-3" style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}>
+                        <i className={`tim-icons ${p.icon} ${p.color}`} style={{ fontSize: "2rem" }} />
+                        <p className="mt-2 mb-1" style={{ color: "#fff", fontWeight: 600 }}>{p.step}</p>
+                        <p style={{ color: "#9a9a9a", fontSize: "0.8rem" }}>{p.desc}</p>
+                        <Progress value={p.val} style={{ height: 4 }} />
+                      </div>
+                    </Col>
+                  ))}
                 </Row>
               </CardBody>
             </Card>
@@ -398,6 +245,12 @@ function ClipQueue() {
       </div>
     </>
   );
+}
+
+function fmtTime(secs) {
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export default ClipQueue;

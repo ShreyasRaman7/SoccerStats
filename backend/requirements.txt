@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+aiosqlite
+python-dotenv
+yt-dlp
+faster-whisper
+opencv-python-headless
+ffmpeg-python
+numpy
+requests
+python-telegram-bot>=20.0
+google-api-python-client
+google-auth-oauthlib
+aiofiles
+httpx
+apscheduler
