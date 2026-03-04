@@ -72,6 +72,20 @@ class ScheduledPost(Base):
     clip = relationship("Clip", back_populates="scheduled_posts")
 
 
+class WatchedChannel(Base):
+    __tablename__ = "watched_channels"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    url          = Column(String, nullable=False, unique=True)   # channel URL
+    name         = Column(String, default="")
+    telegram_chat_id = Column(String, default="")
+    last_video_id    = Column(String, default="")   # yt video ID of last processed video
+    check_interval   = Column(Integer, default=60)  # minutes
+    active       = Column(Boolean, default=True)
+    created_at   = Column(DateTime, default=datetime.utcnow)
+    checked_at   = Column(DateTime, nullable=True)
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 
