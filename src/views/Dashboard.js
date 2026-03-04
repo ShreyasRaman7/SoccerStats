@@ -1,28 +1,6 @@
-/*!
-
-=========================================================
-* Black Dashboard React v1.2.2
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/black-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://github.com/creativetimofficial/black-dashboard-react/blob/master/LICENSE.md)
-
-* Coded by Creative Tim
-
-=========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-*/ 
- 
 import React from "react";
-// nodejs library that concatenates classes
 import classNames from "classnames";
-// react plugin used to create charts
 import { Line, Bar } from "react-chartjs-2";
-
-// reactstrap components
 import {
   Button,
   ButtonGroup,
@@ -30,43 +8,245 @@ import {
   CardHeader,
   CardBody,
   CardTitle,
-  DropdownToggle,
-  DropdownMenu,
-  DropdownItem,
-  UncontrolledDropdown,
-  Label,
-  FormGroup,
-  Input,
-  Table,
   Row,
   Col,
-  UncontrolledTooltip,
+  Input,
+  InputGroup,
+  InputGroupAddon,
+  Badge,
+  Progress,
 } from "reactstrap";
 
-// core components
 import {
-  chartExample1,
-  chartExample2,
-  chartExample3,
-  chartExample4,
+  chartClipsOverTime,
+  chartPlatformViews,
+  chartEngagement,
+  chartPostsPerPlatform,
 } from "variables/charts.js";
 
-function Dashboard(props) {
-  const [bigChartData, setbigChartData] = React.useState("data1");
-  const setBgChartData = (name) => {
-    setbigChartData(name);
+const recentJobs = [
+  {
+    id: "JOB-001",
+    title: "Top 10 Goals of the Season",
+    platform: "YouTube",
+    status: "done",
+    clips: 7,
+    posted: 5,
+    score: 94,
+  },
+  {
+    id: "JOB-002",
+    title: "Ronaldo Skills Compilation",
+    platform: "YouTube",
+    status: "processing",
+    clips: 4,
+    posted: 0,
+    score: 87,
+  },
+  {
+    id: "JOB-003",
+    title: "Best Saves 2024",
+    platform: "YouTube",
+    status: "captioning",
+    clips: 6,
+    posted: 0,
+    score: 91,
+  },
+  {
+    id: "JOB-004",
+    title: "Messi Dribbles Masterclass",
+    platform: "YouTube",
+    status: "scheduled",
+    clips: 5,
+    posted: 5,
+    score: 96,
+  },
+];
+
+const statusColor = {
+  done: "success",
+  processing: "info",
+  captioning: "warning",
+  scheduled: "primary",
+};
+
+const statusLabel = {
+  done: "Done",
+  processing: "AI Processing",
+  captioning: "Adding Captions",
+  scheduled: "Scheduled",
+};
+
+function Dashboard() {
+  const [ytUrl, setYtUrl] = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
+  const [submitted, setSubmitted] = React.useState(false);
+  const [chartView, setChartView] = React.useState("clips");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!ytUrl.trim()) return;
+    setSubmitting(true);
+    setTimeout(() => {
+      setSubmitting(false);
+      setSubmitted(true);
+      setYtUrl("");
+      setTimeout(() => setSubmitted(false), 3500);
+    }, 1800);
   };
+
   return (
     <>
       <div className="content">
+        {/* Hero submit card */}
+        <Row>
+          <Col xs="12">
+            <Card style={{ background: "linear-gradient(135deg, #1a1e34 0%, #1d2035 100%)", border: "1px solid rgba(29,140,248,0.25)" }}>
+              <CardBody>
+                <Row className="align-items-center">
+                  <Col md="7">
+                    <h2 className="mb-1" style={{ color: "#fff", fontWeight: 700 }}>
+                      AI Clipping Agent
+                    </h2>
+                    <p className="mb-3" style={{ color: "#9a9a9a", fontSize: "0.95rem" }}>
+                      Paste a YouTube link — the agent finds viral clips, adds captions,
+                      tracks faces, and schedules posts to TikTok, Instagram &amp; YouTube automatically.
+                    </p>
+                    <form onSubmit={handleSubmit}>
+                      <InputGroup>
+                        <Input
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          value={ytUrl}
+                          onChange={(e) => setYtUrl(e.target.value)}
+                          style={{ background: "#1d1f33", border: "1px solid rgba(29,140,248,0.4)", color: "#fff" }}
+                        />
+                        <InputGroupAddon addonType="append">
+                          <Button
+                            color="info"
+                            type="submit"
+                            disabled={submitting || !ytUrl.trim()}
+                            style={{ minWidth: 130 }}
+                          >
+                            {submitting ? (
+                              <span>
+                                <i className="tim-icons icon-refresh-02 spin-icon" /> Analyzing...
+                              </span>
+                            ) : (
+                              <span>
+                                <i className="tim-icons icon-triangle-right-17" /> Process
+                              </span>
+                            )}
+                          </Button>
+                        </InputGroupAddon>
+                      </InputGroup>
+                      {submitted && (
+                        <p className="mt-2 mb-0" style={{ color: "#00d6b4", fontSize: "0.85rem" }}>
+                          <i className="tim-icons icon-check-2" /> Job queued! AI is analyzing your video for viral clips.
+                        </p>
+                      )}
+                    </form>
+                  </Col>
+                  <Col md="5" className="text-center d-none d-md-block">
+                    <div style={{ fontSize: "5rem", opacity: 0.15, lineHeight: 1 }}>&#9654;</div>
+                    <div className="mt-2" style={{ color: "#9a9a9a", fontSize: "0.78rem" }}>
+                      Powered by AI · 24/7 Autonomous
+                    </div>
+                  </Col>
+                </Row>
+              </CardBody>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Stats row */}
+        <Row>
+          <Col lg="3" md="6">
+            <Card className="card-stats">
+              <CardBody>
+                <Row>
+                  <Col xs="5">
+                    <div className="info-icon text-center icon-info">
+                      <i className="tim-icons icon-scissors" />
+                    </div>
+                  </Col>
+                  <Col xs="7">
+                    <div className="numbers">
+                      <p className="card-category">Clips Generated</p>
+                      <CardTitle tag="h3">1,247</CardTitle>
+                    </div>
+                  </Col>
+                </Row>
+              </CardBody>
+            </Card>
+          </Col>
+          <Col lg="3" md="6">
+            <Card className="card-stats">
+              <CardBody>
+                <Row>
+                  <Col xs="5">
+                    <div className="info-icon text-center icon-success">
+                      <i className="tim-icons icon-send" />
+                    </div>
+                  </Col>
+                  <Col xs="7">
+                    <div className="numbers">
+                      <p className="card-category">Posts Published</p>
+                      <CardTitle tag="h3">893</CardTitle>
+                    </div>
+                  </Col>
+                </Row>
+              </CardBody>
+            </Card>
+          </Col>
+          <Col lg="3" md="6">
+            <Card className="card-stats">
+              <CardBody>
+                <Row>
+                  <Col xs="5">
+                    <div className="info-icon text-center icon-warning">
+                      <i className="tim-icons icon-world" />
+                    </div>
+                  </Col>
+                  <Col xs="7">
+                    <div className="numbers">
+                      <p className="card-category">Total Views</p>
+                      <CardTitle tag="h3">4.2M</CardTitle>
+                    </div>
+                  </Col>
+                </Row>
+              </CardBody>
+            </Card>
+          </Col>
+          <Col lg="3" md="6">
+            <Card className="card-stats">
+              <CardBody>
+                <Row>
+                  <Col xs="5">
+                    <div className="info-icon text-center icon-danger">
+                      <i className="tim-icons icon-trophy" />
+                    </div>
+                  </Col>
+                  <Col xs="7">
+                    <div className="numbers">
+                      <p className="card-category">Avg Viral Score</p>
+                      <CardTitle tag="h3">88%</CardTitle>
+                    </div>
+                  </Col>
+                </Row>
+              </CardBody>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Main chart */}
         <Row>
           <Col xs="12">
             <Card className="card-chart">
               <CardHeader>
                 <Row>
                   <Col className="text-left" sm="6">
-                    <h5 className="card-category">Total Shipments</h5>
-                    <CardTitle tag="h2">Performance</CardTitle>
+                    <h5 className="card-category">Performance Over Time</h5>
+                    <CardTitle tag="h2">Clip &amp; Engagement Growth</CardTitle>
                   </Col>
                   <Col sm="6">
                     <ButtonGroup
@@ -75,54 +255,33 @@ function Dashboard(props) {
                     >
                       <Button
                         tag="label"
-                        className={classNames("btn-simple", {
-                          active: bigChartData === "data1",
-                        })}
+                        className={classNames("btn-simple", { active: chartView === "clips" })}
                         color="info"
-                        id="0"
                         size="sm"
-                        onClick={() => setBgChartData("data1")}
+                        onClick={() => setChartView("clips")}
                       >
-                        <span className="d-none d-sm-block d-md-block d-lg-block d-xl-block">
-                          Accounts
-                        </span>
-                        <span className="d-block d-sm-none">
-                          <i className="tim-icons icon-single-02" />
-                        </span>
+                        <span className="d-none d-sm-block">Clips</span>
+                        <span className="d-block d-sm-none"><i className="tim-icons icon-scissors" /></span>
                       </Button>
                       <Button
-                        color="info"
-                        id="1"
-                        size="sm"
                         tag="label"
-                        className={classNames("btn-simple", {
-                          active: bigChartData === "data2",
-                        })}
-                        onClick={() => setBgChartData("data2")}
+                        className={classNames("btn-simple", { active: chartView === "views" })}
+                        color="info"
+                        size="sm"
+                        onClick={() => setChartView("views")}
                       >
-                        <span className="d-none d-sm-block d-md-block d-lg-block d-xl-block">
-                          Purchases
-                        </span>
-                        <span className="d-block d-sm-none">
-                          <i className="tim-icons icon-gift-2" />
-                        </span>
+                        <span className="d-none d-sm-block">Views</span>
+                        <span className="d-block d-sm-none"><i className="tim-icons icon-world" /></span>
                       </Button>
                       <Button
-                        color="info"
-                        id="2"
-                        size="sm"
                         tag="label"
-                        className={classNames("btn-simple", {
-                          active: bigChartData === "data3",
-                        })}
-                        onClick={() => setBgChartData("data3")}
+                        className={classNames("btn-simple", { active: chartView === "engagement" })}
+                        color="info"
+                        size="sm"
+                        onClick={() => setChartView("engagement")}
                       >
-                        <span className="d-none d-sm-block d-md-block d-lg-block d-xl-block">
-                          Sessions
-                        </span>
-                        <span className="d-block d-sm-none">
-                          <i className="tim-icons icon-tap-02" />
-                        </span>
+                        <span className="d-none d-sm-block">Engagement</span>
+                        <span className="d-block d-sm-none"><i className="tim-icons icon-heart-2" /></span>
                       </Button>
                     </ButtonGroup>
                   </Col>
@@ -131,47 +290,30 @@ function Dashboard(props) {
               <CardBody>
                 <div className="chart-area">
                   <Line
-                    data={chartExample1[bigChartData]}
-                    options={chartExample1.options}
+                    data={chartClipsOverTime[chartView]}
+                    options={chartClipsOverTime.options}
                   />
                 </div>
               </CardBody>
             </Card>
           </Col>
         </Row>
+
+        {/* Platform breakdown + recent jobs */}
         <Row>
           <Col lg="4">
             <Card className="card-chart">
               <CardHeader>
-                <h5 className="card-category">Total Shipments</h5>
+                <h5 className="card-category">Posts by Platform</h5>
                 <CardTitle tag="h3">
-                  <i className="tim-icons icon-bell-55 text-info" /> 763,215
-                </CardTitle>
-              </CardHeader>
-              <CardBody>
-                <div className="chart-area">
-                  <Line
-                    data={chartExample2.data}
-                    options={chartExample2.options}
-                  />
-                </div>
-              </CardBody>
-            </Card>
-          </Col>
-          <Col lg="4">
-            <Card className="card-chart">
-              <CardHeader>
-                <h5 className="card-category">Daily Sales</h5>
-                <CardTitle tag="h3">
-                  <i className="tim-icons icon-delivery-fast text-primary" />{" "}
-                  3,500€
+                  <i className="tim-icons icon-send text-primary" /> Distribution
                 </CardTitle>
               </CardHeader>
               <CardBody>
                 <div className="chart-area">
                   <Bar
-                    data={chartExample3.data}
-                    options={chartExample3.options}
+                    data={chartPostsPerPlatform.data}
+                    options={chartPostsPerPlatform.options}
                   />
                 </div>
               </CardBody>
@@ -180,350 +322,113 @@ function Dashboard(props) {
           <Col lg="4">
             <Card className="card-chart">
               <CardHeader>
-                <h5 className="card-category">Completed Tasks</h5>
+                <h5 className="card-category">Platform Views</h5>
                 <CardTitle tag="h3">
-                  <i className="tim-icons icon-send text-success" /> 12,100K
+                  <i className="tim-icons icon-world text-warning" /> 4.2M total
                 </CardTitle>
               </CardHeader>
               <CardBody>
                 <div className="chart-area">
                   <Line
-                    data={chartExample4.data}
-                    options={chartExample4.options}
+                    data={chartPlatformViews.data}
+                    options={chartPlatformViews.options}
                   />
                 </div>
               </CardBody>
             </Card>
           </Col>
-        </Row>
-        <Row>
-          <Col lg="6" md="12">
-            <Card className="card-tasks">
+          <Col lg="4">
+            <Card>
               <CardHeader>
-                <h6 className="title d-inline">Tasks(5)</h6>
-                <p className="card-category d-inline"> today</p>
-                <UncontrolledDropdown>
-                  <DropdownToggle
-                    caret
-                    className="btn-icon"
-                    color="link"
-                    data-toggle="dropdown"
-                    type="button"
-                  >
-                    <i className="tim-icons icon-settings-gear-63" />
-                  </DropdownToggle>
-                  <DropdownMenu aria-labelledby="dropdownMenuLink" right>
-                    <DropdownItem
-                      href="#pablo"
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      Action
-                    </DropdownItem>
-                    <DropdownItem
-                      href="#pablo"
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      Another action
-                    </DropdownItem>
-                    <DropdownItem
-                      href="#pablo"
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      Something else
-                    </DropdownItem>
-                  </DropdownMenu>
-                </UncontrolledDropdown>
+                <CardTitle tag="h4">Platform Reach</CardTitle>
               </CardHeader>
               <CardBody>
-                <div className="table-full-width table-responsive">
-                  <Table>
-                    <tbody>
-                      <tr>
-                        <td>
-                          <FormGroup check>
-                            <Label check>
-                              <Input defaultValue="" type="checkbox" />
-                              <span className="form-check-sign">
-                                <span className="check" />
-                              </span>
-                            </Label>
-                          </FormGroup>
-                        </td>
-                        <td>
-                          <p className="title">Update the Documentation</p>
-                          <p className="text-muted">
-                            Dwuamish Head, Seattle, WA 8:47 AM
-                          </p>
-                        </td>
-                        <td className="td-actions text-right">
-                          <Button
-                            color="link"
-                            id="tooltip636901683"
-                            title=""
-                            type="button"
-                          >
-                            <i className="tim-icons icon-pencil" />
-                          </Button>
-                          <UncontrolledTooltip
-                            delay={0}
-                            target="tooltip636901683"
-                            placement="right"
-                          >
-                            Edit Task
-                          </UncontrolledTooltip>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <FormGroup check>
-                            <Label check>
-                              <Input
-                                defaultChecked
-                                defaultValue=""
-                                type="checkbox"
-                              />
-                              <span className="form-check-sign">
-                                <span className="check" />
-                              </span>
-                            </Label>
-                          </FormGroup>
-                        </td>
-                        <td>
-                          <p className="title">GDPR Compliance</p>
-                          <p className="text-muted">
-                            The GDPR is a regulation that requires businesses to
-                            protect the personal data and privacy of Europe
-                            citizens for transactions that occur within EU
-                            member states.
-                          </p>
-                        </td>
-                        <td className="td-actions text-right">
-                          <Button
-                            color="link"
-                            id="tooltip457194718"
-                            title=""
-                            type="button"
-                          >
-                            <i className="tim-icons icon-pencil" />
-                          </Button>
-                          <UncontrolledTooltip
-                            delay={0}
-                            target="tooltip457194718"
-                            placement="right"
-                          >
-                            Edit Task
-                          </UncontrolledTooltip>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <FormGroup check>
-                            <Label check>
-                              <Input defaultValue="" type="checkbox" />
-                              <span className="form-check-sign">
-                                <span className="check" />
-                              </span>
-                            </Label>
-                          </FormGroup>
-                        </td>
-                        <td>
-                          <p className="title">Solve the issues</p>
-                          <p className="text-muted">
-                            Fifty percent of all respondents said they would be
-                            more likely to shop at a company
-                          </p>
-                        </td>
-                        <td className="td-actions text-right">
-                          <Button
-                            color="link"
-                            id="tooltip362404923"
-                            title=""
-                            type="button"
-                          >
-                            <i className="tim-icons icon-pencil" />
-                          </Button>
-                          <UncontrolledTooltip
-                            delay={0}
-                            target="tooltip362404923"
-                            placement="right"
-                          >
-                            Edit Task
-                          </UncontrolledTooltip>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <FormGroup check>
-                            <Label check>
-                              <Input defaultValue="" type="checkbox" />
-                              <span className="form-check-sign">
-                                <span className="check" />
-                              </span>
-                            </Label>
-                          </FormGroup>
-                        </td>
-                        <td>
-                          <p className="title">Release v2.0.0</p>
-                          <p className="text-muted">
-                            Ra Ave SW, Seattle, WA 98116, SUA 11:19 AM
-                          </p>
-                        </td>
-                        <td className="td-actions text-right">
-                          <Button
-                            color="link"
-                            id="tooltip818217463"
-                            title=""
-                            type="button"
-                          >
-                            <i className="tim-icons icon-pencil" />
-                          </Button>
-                          <UncontrolledTooltip
-                            delay={0}
-                            target="tooltip818217463"
-                            placement="right"
-                          >
-                            Edit Task
-                          </UncontrolledTooltip>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <FormGroup check>
-                            <Label check>
-                              <Input defaultValue="" type="checkbox" />
-                              <span className="form-check-sign">
-                                <span className="check" />
-                              </span>
-                            </Label>
-                          </FormGroup>
-                        </td>
-                        <td>
-                          <p className="title">Export the processed files</p>
-                          <p className="text-muted">
-                            The report also shows that consumers will not easily
-                            forgive a company once a breach exposing their
-                            personal data occurs. 
-                          </p>
-                        </td>
-                        <td className="td-actions text-right">
-                          <Button
-                            color="link"
-                            id="tooltip831835125"
-                            title=""
-                            type="button"
-                          >
-                            <i className="tim-icons icon-pencil" />
-                          </Button>
-                          <UncontrolledTooltip
-                            delay={0}
-                            target="tooltip831835125"
-                            placement="right"
-                          >
-                            Edit Task
-                          </UncontrolledTooltip>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <FormGroup check>
-                            <Label check>
-                              <Input defaultValue="" type="checkbox" />
-                              <span className="form-check-sign">
-                                <span className="check" />
-                              </span>
-                            </Label>
-                          </FormGroup>
-                        </td>
-                        <td>
-                          <p className="title">Arival at export process</p>
-                          <p className="text-muted">
-                            Capitol Hill, Seattle, WA 12:34 AM
-                          </p>
-                        </td>
-                        <td className="td-actions text-right">
-                          <Button
-                            color="link"
-                            id="tooltip217595172"
-                            title=""
-                            type="button"
-                          >
-                            <i className="tim-icons icon-pencil" />
-                          </Button>
-                          <UncontrolledTooltip
-                            delay={0}
-                            target="tooltip217595172"
-                            placement="right"
-                          >
-                            Edit Task
-                          </UncontrolledTooltip>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </Table>
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between mb-1">
+                    <span style={{ color: "#9a9a9a", fontSize: "0.85rem" }}>TikTok</span>
+                    <span style={{ color: "#fff", fontWeight: 600 }}>2.1M</span>
+                  </div>
+                  <Progress value={72} color="info" style={{ height: 6 }} />
+                </div>
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between mb-1">
+                    <span style={{ color: "#9a9a9a", fontSize: "0.85rem" }}>Instagram</span>
+                    <span style={{ color: "#fff", fontWeight: 600 }}>1.3M</span>
+                  </div>
+                  <Progress value={45} color="success" style={{ height: 6 }} />
+                </div>
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between mb-1">
+                    <span style={{ color: "#9a9a9a", fontSize: "0.85rem" }}>YouTube</span>
+                    <span style={{ color: "#fff", fontWeight: 600 }}>780K</span>
+                  </div>
+                  <Progress value={27} color="warning" style={{ height: 6 }} />
+                </div>
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between mb-1">
+                    <span style={{ color: "#9a9a9a", fontSize: "0.85rem" }}>Telegram</span>
+                    <span style={{ color: "#fff", fontWeight: 600 }}>120K</span>
+                  </div>
+                  <Progress value={12} color="danger" style={{ height: 6 }} />
                 </div>
               </CardBody>
             </Card>
           </Col>
-          <Col lg="6" md="12">
+        </Row>
+
+        {/* Recent jobs */}
+        <Row>
+          <Col xs="12">
             <Card>
               <CardHeader>
-                <CardTitle tag="h4">Simple Table</CardTitle>
+                <CardTitle tag="h4">Recent Processing Jobs</CardTitle>
+                <p className="card-category">Latest YouTube videos submitted to the agent</p>
               </CardHeader>
               <CardBody>
-                <Table className="tablesorter" responsive>
-                  <thead className="text-primary">
-                    <tr>
-                      <th>Name</th>
-                      <th>Country</th>
-                      <th>City</th>
-                      <th className="text-center">Salary</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Dakota Rice</td>
-                      <td>Niger</td>
-                      <td>Oud-Turnhout</td>
-                      <td className="text-center">$36,738</td>
-                    </tr>
-                    <tr>
-                      <td>Minerva Hooper</td>
-                      <td>Curaçao</td>
-                      <td>Sinaai-Waas</td>
-                      <td className="text-center">$23,789</td>
-                    </tr>
-                    <tr>
-                      <td>Sage Rodriguez</td>
-                      <td>Netherlands</td>
-                      <td>Baileux</td>
-                      <td className="text-center">$56,142</td>
-                    </tr>
-                    <tr>
-                      <td>Philip Chaney</td>
-                      <td>Korea, South</td>
-                      <td>Overland Park</td>
-                      <td className="text-center">$38,735</td>
-                    </tr>
-                    <tr>
-                      <td>Doris Greene</td>
-                      <td>Malawi</td>
-                      <td>Feldkirchen in Kärnten</td>
-                      <td className="text-center">$63,542</td>
-                    </tr>
-                    <tr>
-                      <td>Mason Porter</td>
-                      <td>Chile</td>
-                      <td>Gloucester</td>
-                      <td className="text-center">$78,615</td>
-                    </tr>
-                    <tr>
-                      <td>Jon Porter</td>
-                      <td>Portugal</td>
-                      <td>Gloucester</td>
-                      <td className="text-center">$98,615</td>
-                    </tr>
-                  </tbody>
-                </Table>
+                <div className="table-responsive">
+                  <table className="table tablesorter">
+                    <thead className="text-primary">
+                      <tr>
+                        <th>Job ID</th>
+                        <th>Video Title</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                        <th>Clips Found</th>
+                        <th>Posted</th>
+                        <th className="text-center">Viral Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentJobs.map((job) => (
+                        <tr key={job.id}>
+                          <td style={{ fontFamily: "monospace", color: "#9a9a9a", fontSize: "0.8rem" }}>{job.id}</td>
+                          <td>{job.title}</td>
+                          <td>
+                            <i className="tim-icons icon-triangle-right-17 text-danger" style={{ marginRight: 4 }} />
+                            {job.platform}
+                          </td>
+                          <td>
+                            <Badge color={statusColor[job.status]} pill>
+                              {statusLabel[job.status]}
+                            </Badge>
+                          </td>
+                          <td>{job.clips}</td>
+                          <td>{job.posted}</td>
+                          <td className="text-center">
+                            <span
+                              style={{
+                                color: job.score >= 90 ? "#00d6b4" : job.score >= 80 ? "#1f8ef1" : "#ff8d72",
+                                fontWeight: 700,
+                              }}
+                            >
+                              {job.score}%
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </CardBody>
             </Card>
           </Col>
